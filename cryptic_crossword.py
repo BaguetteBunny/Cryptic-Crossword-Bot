@@ -27,7 +27,7 @@ intents.members = True
 
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
-games = TTLCache(maxsize=500, ttl=10800)  # 3 hours TTL
+games = TTLCache(maxsize=C.CACHE_SIZE, ttl=C.CACHE_TTL)  # 3 hours TTL
 
 print("Starting bot...")
 @bot.event
