@@ -35,7 +35,9 @@ class Generator:
         self.directions = []
         self.positions = []
         self.numbers = []
+
         self.haschar = []
+        self.my_solutions = []
 
         entries = self.data["crossword"]["entries"]
 
@@ -58,6 +60,7 @@ class Generator:
             self.directions.append(entry.get("direction"))
             self.positions.append(entry.get("position"))
             self.numbers.append(entry.get("number"))
+            self.my_solutions.append("")
 
         # Load assets
         self.assets = {
@@ -105,22 +108,25 @@ class Generator:
                 )
                 drawn_labels.add((x, y))
     
-    def write(self, number, word):
+    def write(self, number, word, direction=None):
         if number not in self.numbers:
             return f"Number {number} not found in crossword."
         
         idx = self.numbers.index(number)
         position = self.positions[idx]
-        direction = self.directions[idx]
         
         if len(word) != len(self.solutions[idx]):
             return f"Word length mismatch: There are {len(self.solutions[idx])} letters, not {len(word)}!"
         
+        if direction == "across" and self.directions[idx] != "across" or direction == "down" and self.directions[idx] != "down":
+            return f"Direction mismatch: Clue {number} is not {direction}."
+        
+        self.my_solutions[idx] = word.upper()
         for i, char in enumerate(word):
             x, y = position["x"], position["y"]
             if direction == "across":
                 self.grid[y][x + i] = char
-                new_x = C.TILE_SIZE * (x + i)
+                new_x = C.TILE_SIZE * (x + i) 
                 new_y = C.TILE_SIZE * y
             elif direction == "down":
                 self.grid[y + i][x] = char

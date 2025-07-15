@@ -1,11 +1,10 @@
-import discord
+import datetime, io, logging, discord
 from discord.ext import commands
+from discord import app_commands
+from discord.app_commands import Choice
 import constants as C
 from generator import Generator
-import logging
 from cachetools import TTLCache
-import datetime
-import io
 
 def load_crossword(user_id):
     # Buffer image generation
@@ -47,9 +46,10 @@ async def start(interaction: discord.Interaction):
     embed,file = load_crossword(user_id=interaction.user.id)
     await interaction.followup.send(embed=embed, file=file)
 
-
+@app_commands.choices(direction=[Choice(name="ACROSS", value="across"), Choice(name="DOWN", value="down")])
 @bot.tree.command(name="solve", description="Solve a cryptic crossword clue.")
-async def start(interaction: discord.Interaction, clue_number: int, word: str):
+async def start(interaction: discord.Interaction, clue_number: int, word: str, direction: Choice[str]):
+    
     user_id = interaction.user.id
     if user_id not in games:
         await interaction.response.send_message("You do not have a game running. Run the command `/start` to start.", ephemeral=True)
@@ -58,7 +58,7 @@ async def start(interaction: discord.Interaction, clue_number: int, word: str):
     clue_number = interaction.data.get('options', [{}])[0].get('value')
     word = interaction.data.get('options', [{}])[1].get('value')
 
-    result = games[user_id].write(clue_number, word)
+    result = games[user_id].write(clue_number, word, direction.value)
     
     if result:
         await interaction.response.send_message(result, ephemeral=True)
@@ -66,6 +66,31 @@ async def start(interaction: discord.Interaction, clue_number: int, word: str):
         await interaction.response.send_message(f"Successfully wrote '{word}' for clue number {clue_number}.", ephemeral=True)
         embed,file = load_crossword(user_id=interaction.user.id)
         await interaction.followup.send(embed=embed, file=file)
+
+@bot.tree.command(name="verify", description="Checks if your solution is correct for a given clue number.")
+async def start(interaction: discord.Interaction, clue_number: int, direction: Choice[str]):
+    user_id = interaction.user.id
+    if user_id not in games:
+        await interaction.response.send_message("You do not have a game running. Run the command `/start` to start.", ephemeral=True)
+        return
+    
+    clue_number = interaction.data.get('options', [{}])[0].get('value')
+
+    if clue_number < 0 or clue_number >= len(games[user_id].solutions):
+        await interaction.response.send_message("Invalid clue number. Please provide a valid number.", ephemeral=True)
+        return
+    
+    if games[user_id].my_solutions[clue_number].upper() == "":
+        await interaction.response.send_message("You have not provided a solution for this clue yet.", ephemeral=True)
+        return
+    
+    if direction.value == "across" and games[user_id].directions[games[user_id].numbers.index(clue_number)] != "across" or direction.value == "down" and games[user_id].directions[games[user_id].numbers.index(clue_number)] != "down":
+        return f"Direction mismatch: Clue {clue_number} is not {direction.value}."
+    
+    if games[user_id].solutions[clue_number].upper() == games[user_id].my_solutions[clue_number].upper():
+        await interaction.response.send_message("Yes! That's the correct answer.", ephemeral=True)
+    else:
+        await interaction.response.send_message("No, that is not correct. Try again!", ephemeral=True)
 
 @bot.tree.command(name="stop", description="Stop current cryptic crossword game.")
 async def start(interaction: discord.Interaction):
