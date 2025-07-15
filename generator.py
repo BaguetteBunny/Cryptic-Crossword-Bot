@@ -4,7 +4,9 @@ from PIL import Image, ImageDraw, ImageFont
 import constants as C
 
 class Generator:
-    def __init__(self, crossword_id=0):
+    def __init__(self, user_id, crossword_id=0):
+        self.user_id = user_id
+
         # Find valid crossword ID
         self.crossword_id = crossword_id
         if self.crossword_id > 21_621 and self.crossword_exists(self.crossword_id):
@@ -23,6 +25,11 @@ class Generator:
 
         # Extract important data from the crossword URL
         self.data = self.crossword_request.json()
+
+        self.title = self.data["webTitle"].title()
+        self.date = self.data["webPublicationDateDisplay"]
+        self.author = self.data["author"]["byline"].title()
+
         self.clues = []
         self.solutions = []
         self.directions = []
@@ -30,16 +37,20 @@ class Generator:
         self.numbers = []
         self.haschar = []
 
-
         entries = self.data["crossword"]["entries"]
+
+        self.description = ""
         for entry in entries:
             clue = entry.get("clue")
-            solution = entry.get("solution")
             direction = entry.get("direction")
-            position = entry.get("position")
             number = entry.get("number")
 
-            print(f"{number} {direction.upper()} at ({position['x']}, {position['y']}): {clue} → {solution}")
+            if direction == "across":
+                symbol = "→"
+            elif direction == "down":
+                symbol = "↓"
+
+            self.description += f"{number} {symbol} : {clue}\n"
         
         for entry in entries:
             self.clues.append(entry.get("clue"))
@@ -96,16 +107,14 @@ class Generator:
     
     def write(self, number, word):
         if number not in self.numbers:
-            print(f"Number {number} not found in crossword.")
-            return False
+            return f"Number {number} not found in crossword."
         
         idx = self.numbers.index(number)
         position = self.positions[idx]
         direction = self.directions[idx]
         
         if len(word) != len(self.solutions[idx]):
-            print(f"Word length mismatch: There are {len(self.solutions[idx])} letters, not {len(word)}!")
-            return False
+            return f"Word length mismatch: There are {len(self.solutions[idx])} letters, not {len(word)}!"
         
         for i, char in enumerate(word):
             x, y = position["x"], position["y"]
@@ -123,11 +132,4 @@ class Generator:
             self.draw.text((new_x+20, new_y+10), char, fill="black", font=self.assets["letter_font"])
             self.haschar.append((new_x, new_y))
         
-        return True
-
-
-
-test = Generator(23713)
-test.write(1, "TESTS")
-test.write(2, "TESTSTEST")
-test.canvas.show()
+        return None
