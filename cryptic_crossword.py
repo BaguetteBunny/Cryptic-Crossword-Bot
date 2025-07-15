@@ -1,11 +1,7 @@
 import discord
 from discord.ext import commands
+import constants as C
 import logging
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-TOKEN = os.getenv('ENV_DISCORD_TOKEN')
 
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 intents = discord.Intents.default()
@@ -26,6 +22,6 @@ async def hello(interaction: discord.Interaction):
     await interaction.response.send_message(f"Hello {interaction.user.mention}!")
 
 try:
-    bot.run(TOKEN)
+    bot.run(C.TOKEN)
 except Exception as e:
     print(f"Bot failed to run: {e}")
