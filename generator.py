@@ -28,7 +28,7 @@ class Generator:
         self.directions = []
         self.positions = []
         self.numbers = []
-        self.solved = []
+        self.haschar = []
 
 
         entries = self.data["crossword"]["entries"]
@@ -47,16 +47,21 @@ class Generator:
             self.directions.append(entry.get("direction"))
             self.positions.append(entry.get("position"))
             self.numbers.append(entry.get("number"))
-            self.solved.append(None)
 
         # Load assets
         self.assets = {
             "empty": Image.open(C.IMAGES_PATH+"empty.png").resize((C.TILE_SIZE, C.TILE_SIZE)),
-            "full": Image.open(C.IMAGES_PATH+"full.png").resize((C.TILE_SIZE, C.TILE_SIZE)),
-            "font": ImageFont.truetype(C.FONT_PATH, 24)
+            "font": ImageFont.truetype(C.FONT_PATH, 24),
+            "letter_font": ImageFont.truetype(C.FONT_PATH, 64)
         }
 
-        # Create canvas for the crossword
+        self.create_crossword()
+
+    def crossword_exists(self, crid):
+        req = requests.get(f"https://www.theguardian.com/crosswords/cryptic/{crid}.json")
+        return req if 200 == req.status_code else False
+    
+    def create_crossword(self):
         canvas_width = C.COLS*C.TILE_SIZE
         canvas_height = C.ROWS*C.TILE_SIZE
         self.canvas = Image.new('RGB', (canvas_width, canvas_height), color='black')
@@ -77,8 +82,7 @@ class Generator:
                     self.canvas.paste(self.assets["empty"], (new_x, new_y))
                     self.grid[y + i][x] = "?"
 
-        # Create text 
-        drawn_labels = set()
+                drawn_labels = set()
         for position, direction, idx in zip(self.positions, self.directions, range(len(self.positions))):
             x, y = position["x"], position["y"]
             if (x, y) not in drawn_labels:
@@ -89,15 +93,41 @@ class Generator:
                     font=self.assets["font"]
                 )
                 drawn_labels.add((x, y))
-
-    def crossword_exists(self, crid):
-        req = requests.get(f"https://www.theguardian.com/crosswords/cryptic/{crid}.json")
-        return req if 200 == req.status_code else False
     
-    def draw_on_grid(self): ...
+    def write(self, number, word):
+        if number not in self.numbers:
+            print(f"Number {number} not found in crossword.")
+            return False
+        
+        idx = self.numbers.index(number)
+        position = self.positions[idx]
+        direction = self.directions[idx]
+        
+        if len(word) != len(self.solutions[idx]):
+            print(f"Word length mismatch: There are {len(self.solutions[idx])} letters, not {len(word)}!")
+            return False
+        
+        for i, char in enumerate(word):
+            x, y = position["x"], position["y"]
+            if direction == "across":
+                self.grid[y][x + i] = char
+                new_x = C.TILE_SIZE * (x + i)
+                new_y = C.TILE_SIZE * y
+            elif direction == "down":
+                self.grid[y + i][x] = char
+                new_x = C.TILE_SIZE * x
+                new_y = C.TILE_SIZE * (y + i)
+            
+            if (new_x, new_y) in self.haschar:
+                self.canvas.paste(self.assets["empty"], (new_x, new_y))
+            self.draw.text((new_x+20, new_y+10), char, fill="black", font=self.assets["letter_font"])
+            self.haschar.append((new_x, new_y))
+        
+        return True
 
 
 
 test = Generator(23713)
-print(test.crossword_id)
+test.write(1, "TESTS")
+test.write(2, "TESTSTEST")
 test.canvas.show()
