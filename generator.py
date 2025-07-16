@@ -53,9 +53,6 @@ class Crossword:
             symbol = "→" if direction == "across" else "↓"
             self.description += f"{number} {symbol} : {clue}\n"
 
-            print(solution)
-
-
         # Load assets
         self.assets = {
             "empty": Image.open(C.IMAGES_PATH+"empty.png").resize((C.TILE_SIZE, C.TILE_SIZE)),
@@ -135,8 +132,10 @@ class Crossword:
             return f"❌ Direction mismatch: Clue {number} cannot be completed {direction.lower()}. ❌"
         
         # Length exact
-        if len(word) != len(puzzle_line[number]["solution"]):
-            return f"❌ Word length mismatch: There are {len(puzzle_line[number]['solution'])} letters, not {len(word)}! ❌"
+        crossword_length = len(puzzle_line[number]["solution"])
+        word_length = len(word)
+        if word_length != crossword_length:
+            return f"❌ Word length mismatch: There are {crossword_length} letters, not {word_length}! ❌"
         
         # Draw letters
         puzzle_line[number]["my_solution"] = word.upper()
@@ -196,3 +195,53 @@ class Crossword:
             result = self.down_puzzle_lines[number]["solution"].upper()
             self.down_puzzle_lines[number]["my_solution"] = result
             self.write(number, result, direction="down")
+
+class Puzzle:
+    def __init__(self, user_id, crossword_id=0):
+        self.user_id = user_id
+
+        # Find valid crossword ID
+        self.crossword_id = crossword_id
+        if self.crossword_id > 21_621 and self.crossword_exists(self.crossword_id):
+            self.crossword_request = self.crossword_exists(crossword_id)
+        
+        else:
+            self.crossword_id = 0
+            while not self.crossword_id:
+                randomID = random.randint(C.MINIMUM_CROSSWORD_ID, C.MAXIMUM_CROSSWORD_ID)
+                self.crossword_request = self.crossword_exists(randomID)
+                if self.crossword_request:
+                    self.crossword_id = randomID
+                else:
+                    print(f"Crossword with ID {randomID} does not exist, trying again...")
+        print(f"Crossword ID found: {self.crossword_id}")
+
+        # Extract important data from the crossword URL
+        self.data = self.crossword_request.json()
+
+        self.title = self.data["webTitle"].title()
+        self.date = self.data["webPublicationDateDisplay"]
+        self.author = str(self.data.get("author", {}).get("byline") or "Anonymous").title()
+
+        entries = self.data["crossword"]["entries"]
+        random_entry = random.choice(entries)
+
+        self.puzzle_line = {"clue": random_entry["clue"], "solution": random_entry["solution"]}
+        self.description = ("◻️ "*len(self.puzzle_line["solution"]) + "\n" + random_entry["clue"])
+        self.completed_description = (f"**{self.puzzle_line['solution']}**" + "\n" + random_entry["clue"])
+
+    def write(self, word):
+        # Length exact
+        puzzle_length = len(self.puzzle_line["solution"])
+        word_length = len(word)
+        if word_length != puzzle_length:
+            return f"❌ Word length mismatch: There are {puzzle_length} letters, not {word_length}! ❌"
+        
+        return self.check_solution(word)
+
+    def check_solution(self, word):
+        return self.puzzle_line["solution"].upper() == word.upper()
+
+    def crossword_exists(self, crid):
+        req = requests.get(f"https://www.theguardian.com/crosswords/cryptic/{crid}.json")
+        return req if 200 == req.status_code else False
