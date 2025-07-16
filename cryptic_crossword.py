@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 from discord.app_commands import Choice
 import constants as C
-from generator import Generator
+from generator import Crossword
 from cachetools import TTLCache
 
 def load_crossword(user_id):
@@ -34,25 +34,25 @@ async def on_ready():
     synced = await bot.tree.sync()
     print(f"Synced {len(synced)} slash command(s)")
 
-@bot.tree.command(name="start", description="Start a new cryptic crossword game.")
+@bot.tree.command(name="start_crossword", description="Start a new cryptic crossword.")
 async def start(interaction: discord.Interaction):
     user_id = interaction.user.id
     if user_id in games:
-        await interaction.response.send_message("❌ You already have a game running. Run the command `/stop` to stop. ❌", ephemeral=True)
+        await interaction.response.send_message("❌ You already have a cryptic crossword running. Run the command `/stop_crossword` to stop. ❌", ephemeral=True)
         return
     
-    games[user_id] = Generator(user_id)
-    await interaction.response.send_message("Loading cryptic crossword puzzle... 🖊️", ephemeral=True)
+    games[user_id] = Crossword(user_id)
+    await interaction.response.send_message("Loading cryptic crossword... 🖊️", ephemeral=True)
     embed,file = load_crossword(user_id=interaction.user.id)
     await interaction.followup.send(embed=embed, file=file)
 
 @app_commands.choices(direction=[Choice(name="ACROSS", value="across"), Choice(name="DOWN", value="down")])
-@bot.tree.command(name="solve", description="Solve a cryptic crossword clue.")
+@bot.tree.command(name="solve_crossword", description="Solve a cryptic crossword clue.")
 async def start(interaction: discord.Interaction, clue_number: int, word: str, direction: Choice[str]):
     
     user_id = interaction.user.id
     if user_id not in games:
-        await interaction.response.send_message("❌ You do not have a game running. Run the command `/start` to start. ❌", ephemeral=True)
+        await interaction.response.send_message("❌ You do not have a cryptic crossword running. Run the command `/start_crossword` to start. ❌", ephemeral=True)
         return
     
     clue_number = interaction.data.get('options', [{}])[0].get('value')
@@ -69,32 +69,32 @@ async def start(interaction: discord.Interaction, clue_number: int, word: str, d
         embed,file = load_crossword(user_id=interaction.user.id)
         if completion:
             username = await bot.fetch_user(user_id)
-            text = f"‼️ Congratulations! {str(username)} has completed their crossword successfully! 🥳🎉"
+            text = f"‼️ Congratulations! {str(username)} has completed their cryptic crossword successfully! 🥳🎉"
             await interaction.followup.send(content=text, file=file)
             del games[user_id]
         else:
             await interaction.followup.send(embed=embed, file=file)
 
 @app_commands.choices(direction=[Choice(name="ACROSS", value="across"), Choice(name="DOWN", value="down")])
-@bot.tree.command(name="verify", description="Checks if your solution is correct for a given clue number.")
+@bot.tree.command(name="verify_crossword", description="Checks if your cryptic crossword solution is correct for a given clue number.")
 async def start(interaction: discord.Interaction, clue_number: int, direction: Choice[str]):
     user_id = interaction.user.id
     if user_id not in games:
-        await interaction.response.send_message("❌ You do not have a game running. Run the command `/start` to start. ❌", ephemeral=True)
+        await interaction.response.send_message("❌ You do not have a cryptic crossword running. Run the command `/start_crossword` to start. ❌", ephemeral=True)
         return
     
     clue_number = interaction.data.get('options', [{}])[0].get('value')
     await interaction.response.send_message(games[user_id].verify(clue_number, direction.value), ephemeral=True)
 
-@bot.tree.command(name="stop", description="Stop current cryptic crossword game.")
+@bot.tree.command(name="stop_crossword", description="Stop current cryptic crossword game.")
 async def start(interaction: discord.Interaction):
     user_id = interaction.user.id
     if user_id not in games:
-        await interaction.response.send_message("❌ You do not have a game running. Run the command `/start` to start. ❌", ephemeral=True)
+        await interaction.response.send_message("❌ You do not have a cryptic crossword running. Run the command `/start_crossword` to start. ❌", ephemeral=True)
         return
     
     del games[user_id]
-    await interaction.response.send_message("❌ Your game has been stopped. ❌", ephemeral=True)
+    await interaction.response.send_message("❌ Your cryptic crossword has been stopped. ❌", ephemeral=True)
 
 try:
     bot.run(C.TOKEN)
