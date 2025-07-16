@@ -2,6 +2,7 @@ import requests
 import random
 from PIL import Image, ImageDraw, ImageFont
 import constants as C
+from itertools import chain
 
 class Generator:
     def __init__(self, user_id, crossword_id=0):
@@ -30,37 +31,28 @@ class Generator:
         self.date = self.data["webPublicationDateDisplay"]
         self.author = self.data["author"]["byline"].title()
 
-        self.clues = []
-        self.solutions = []
-        self.directions = []
-        self.positions = []
-        self.numbers = []
-
+        self.across_puzzle_lines = {}
+        self.down_puzzle_lines = {}
         self.haschar = []
-        self.my_solutions = []
 
         entries = self.data["crossword"]["entries"]
 
-        self.description = ""
+        self.description = ""        
         for entry in entries:
-            clue = entry.get("clue")
             direction = entry.get("direction")
+            clue = entry.get("clue")
             number = entry.get("number")
 
             if direction == "across":
-                symbol = "→"
+                self.across_puzzle_lines[number] = {"clue": clue, "direction": "across", "solution": entry.get("solution"), "position": entry.get("position"), "my_solution": ""}
             elif direction == "down":
-                symbol = "↓"
+                self.down_puzzle_lines[number] = {"clue": clue, "direction": "down", "solution": entry.get("solution"), "position": entry.get("position"), "my_solution": ""}
 
+            symbol = "→" if direction == "across" else "↓"
             self.description += f"{number} {symbol} : {clue}\n"
-        
-        for entry in entries:
-            self.clues.append(entry.get("clue"))
-            self.solutions.append(entry.get("solution"))
-            self.directions.append(entry.get("direction"))
-            self.positions.append(entry.get("position"))
-            self.numbers.append(entry.get("number"))
-            self.my_solutions.append("")
+
+            print(entry.get("position"))
+
 
         # Load assets
         self.assets = {
@@ -82,49 +74,68 @@ class Generator:
         self.draw = ImageDraw.Draw(self.canvas)
         self.grid = [["!" for _ in range(C.COLS)] for _ in range(C.ROWS)]
 
-        for position, direction, idx in zip(self.positions, self.directions, range(len(self.positions))):
+        # Draw across puzzle lines
+        for _, value in self.across_puzzle_lines.items():
+            position = value["position"]
+            solution = value["solution"]
             x, y = position["x"], position["y"]
-            for i in range(len(self.solutions[idx])):
-                if direction == "across":
-                    new_x = C.TILE_SIZE*(x+i)
-                    new_y = C.TILE_SIZE*y
-                    self.canvas.paste(self.assets["empty"], (new_x, new_y))
-                    self.grid[y][x + i] = "?"
-                elif direction == "down":
-                    new_x = C.TILE_SIZE*x
-                    new_y = C.TILE_SIZE*(y+i)
-                    self.canvas.paste(self.assets["empty"], (new_x, new_y))
-                    self.grid[y + i][x] = "?"
 
-                drawn_labels = set()
-        for position, direction, idx in zip(self.positions, self.directions, range(len(self.positions))):
+            for i in range(len(solution)):
+                new_x = C.TILE_SIZE*(x+i)
+                new_y = C.TILE_SIZE*y
+                self.canvas.paste(self.assets["empty"], (new_x, new_y))
+                self.grid[y][x + i] = "?"
+
+        # Draw down puzzle lines
+        for _, value in self.down_puzzle_lines.items():
+            position = value["position"]
+            solution = value["solution"]
             x, y = position["x"], position["y"]
+
+            for i in range(len(solution)):
+                new_x = C.TILE_SIZE*x
+                new_y = C.TILE_SIZE*(y+i)
+                self.canvas.paste(self.assets["empty"], (new_x, new_y))
+                self.grid[y + i][x] = "?"
+        
+        # Draw number labels
+        drawn_labels = set()
+        for key, value in chain(self.across_puzzle_lines.items(), self.down_puzzle_lines.items()):
+            position = value["position"]
+            x, y = position["x"], position["y"]
+
             if (x, y) not in drawn_labels:
                 self.draw.text(
                     (C.TILE_SIZE * x+3, C.TILE_SIZE * y-1),
-                    str(self.numbers[idx]),
+                    str(key),
                     fill="black",
                     font=self.assets["font"]
                 )
                 drawn_labels.add((x, y))
     
     def write(self, number, word, direction=None):
-        if number not in self.numbers:
+        if direction == "across":
+            puzzle_line = self.across_puzzle_lines
+        elif direction == "down":
+            puzzle_line = self.down_puzzle_lines
+
+        # Number exists
+        if not 1 <= number <= max(max({int(k): v for k, v in self.across_puzzle_lines.items()}.keys()), max({int(k): v for k, v in self.down_puzzle_lines.items()}.keys())):
             return f"Number {number} not found in crossword."
         
-        idx = self.numbers.index(number)
-        position = self.positions[idx]
+        # Direction exists
+        if number not in puzzle_line.keys():
+            return f"Direction mismatch: Clue {number} cannot be completed {direction.lower()}."
         
-        if len(word) != len(self.solutions[idx]):
-            return f"Word length mismatch: There are {len(self.solutions[idx])} letters, not {len(word)}!"
+        # Length exact
+        if len(word) != len(puzzle_line[number]["solution"]):
+            return f"Word length mismatch: There are {len(puzzle_line[number]['solution'])} letters, not {len(word)}!"
         
-        if direction == "across" and self.directions[idx] != "across" or direction == "down" and self.directions[idx] != "down":
-            return f"Direction mismatch: Clue {number} is not {direction}."
-        
-        self.my_solutions[idx] = word.upper()
-        for i, char in enumerate(word):
-            x, y = position["x"], position["y"]
-            if direction == "across":
+        # Draw letters
+        puzzle_line[number]["my_solution"] = word.upper()
+        for i, char in enumerate(puzzle_line[number]["my_solution"]):
+            x, y = puzzle_line[number]["position"]["x"], puzzle_line[number]["position"]["y"]
+            if direction == "across": # here
                 self.grid[y][x + i] = char
                 new_x = C.TILE_SIZE * (x + i) 
                 new_y = C.TILE_SIZE * y

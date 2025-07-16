@@ -67,6 +67,7 @@ async def start(interaction: discord.Interaction, clue_number: int, word: str, d
         embed,file = load_crossword(user_id=interaction.user.id)
         await interaction.followup.send(embed=embed, file=file)
 
+@app_commands.choices(direction=[Choice(name="ACROSS", value="across"), Choice(name="DOWN", value="down")])
 @bot.tree.command(name="verify", description="Checks if your solution is correct for a given clue number.")
 async def start(interaction: discord.Interaction, clue_number: int, direction: Choice[str]):
     user_id = interaction.user.id
@@ -75,19 +76,21 @@ async def start(interaction: discord.Interaction, clue_number: int, direction: C
         return
     
     clue_number = interaction.data.get('options', [{}])[0].get('value')
+    puzzle_line = getattr(games[user_id], "across_puzzle_lines" if direction.value == "across" else "down_puzzle_lines")
 
-    if clue_number < 0 or clue_number >= len(games[user_id].solutions):
+    if not 1 <= clue_number <= max(max({int(k): v for k, v in games[user_id].across_puzzle_lines.items()}.keys()), max({int(k): v for k, v in games[user_id].down_puzzle_lines.items()}.keys())):
         await interaction.response.send_message("Invalid clue number. Please provide a valid number.", ephemeral=True)
         return
     
-    if games[user_id].my_solutions[clue_number].upper() == "":
+    if clue_number not in puzzle_line.keys():
+        await interaction.response.send_message(f"Direction mismatch: Clue {clue_number} is not {direction.value}.", ephemeral=True)
+        return 
+    
+    if puzzle_line[clue_number]["my_solution"].upper() == "":
         await interaction.response.send_message("You have not provided a solution for this clue yet.", ephemeral=True)
         return
     
-    if direction.value == "across" and games[user_id].directions[games[user_id].numbers.index(clue_number)] != "across" or direction.value == "down" and games[user_id].directions[games[user_id].numbers.index(clue_number)] != "down":
-        return f"Direction mismatch: Clue {clue_number} is not {direction.value}."
-    
-    if games[user_id].solutions[clue_number].upper() == games[user_id].my_solutions[clue_number].upper():
+    if puzzle_line[clue_number]["my_solution"].upper() == puzzle_line[clue_number]["solution"].upper():
         await interaction.response.send_message("Yes! That's the correct answer.", ephemeral=True)
     else:
         await interaction.response.send_message("No, that is not correct. Try again!", ephemeral=True)
