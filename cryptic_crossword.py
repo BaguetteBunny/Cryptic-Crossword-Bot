@@ -19,7 +19,7 @@ def load_crossword(user_id):
     embed.set_footer(text=games[user_id].date, icon_url="https://assets.guim.co.uk/static/frontend/icons/homescreen/apple-touch-icon-512.png")
     return embed, file
 
-handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler = logging.FileHandler(filename='log/discord.log', encoding='utf-8', mode='w')
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
