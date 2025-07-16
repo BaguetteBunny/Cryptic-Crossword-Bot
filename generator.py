@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageFont
 import constants as C
 from itertools import chain
 
-class Generator:
+class Crossword:
     def __init__(self, user_id, crossword_id=0):
         self.user_id = user_id
 
