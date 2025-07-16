@@ -16,7 +16,7 @@ class Generator:
         else:
             self.crossword_id = 0
             while not self.crossword_id:
-                randomID = random.randint(21_621, 29_747)
+                randomID = random.randint(C.MINIMUM_CROSSWORD_ID, C.MAXIMUM_CROSSWORD_ID)
                 self.crossword_request = self.crossword_exists(randomID)
                 if self.crossword_request:
                     self.crossword_id = randomID
@@ -128,15 +128,15 @@ class Generator:
 
         # Number exists
         if not 1 <= number <= max(max({int(k): v for k, v in self.across_puzzle_lines.items()}.keys()), max({int(k): v for k, v in self.down_puzzle_lines.items()}.keys())):
-            return f"Number {number} not found in crossword."
+            return f"❌ Number {number} not found in crossword. ❌"
         
         # Direction exists
         if number not in puzzle_line.keys():
-            return f"Direction mismatch: Clue {number} cannot be completed {direction.lower()}."
+            return f"❌ Direction mismatch: Clue {number} cannot be completed {direction.lower()}. ❌"
         
         # Length exact
         if len(word) != len(puzzle_line[number]["solution"]):
-            return f"Word length mismatch: There are {len(puzzle_line[number]['solution'])} letters, not {len(word)}!"
+            return f"❌ Word length mismatch: There are {len(puzzle_line[number]['solution'])} letters, not {len(word)}! ❌"
         
         # Draw letters
         puzzle_line[number]["my_solution"] = word.upper()
@@ -163,18 +163,18 @@ class Generator:
             puzzle_line = self.down_puzzle_lines
 
         if not 1 <= number <= max(max({int(k): v for k, v in self.across_puzzle_lines.items()}.keys()), max({int(k): v for k, v in self.down_puzzle_lines.items()}.keys())):
-            return f"Number {number} not found in crossword."
+            return f"❌ Number {number} not found in crossword. ❌"
         
         if number not in puzzle_line.keys():
-            return f"Direction mismatch: Clue {number} cannot be completed {direction.lower()}."
+            return f"❌ Direction mismatch: Clue {number} cannot be completed {direction.lower()}. ❌"
         
         if puzzle_line[number]["my_solution"].upper() == "":
-            return "You have not provided a solution for this clue yet."
+            return "❌ You have not provided a solution for this clue yet. ❌"
         
         if puzzle_line[number]["my_solution"].upper() == puzzle_line[number]["solution"].upper():
-            return "Yes! That's the correct answer."
+            return "✔️ Yes! That's the correct answer. ✔️"
         else:
-            return "No, that is incorrect. Try again!"
+            return "❌ No, that is incorrect. Try again! ❌"
         
     def check_complete(self):
         for number in self.across_puzzle_lines.keys():
@@ -184,8 +184,7 @@ class Generator:
         for number in self.down_puzzle_lines.keys():
             if self.down_puzzle_lines[number]["my_solution"].upper() != self.down_puzzle_lines[number]["solution"].upper():
                 return
-            
-        return "Congratulations! You've completed this crossword successfully!"
+        return True
     
     def debug_check_completion(self):
         for number in self.across_puzzle_lines.keys():

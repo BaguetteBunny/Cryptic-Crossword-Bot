@@ -38,11 +38,11 @@ async def on_ready():
 async def start(interaction: discord.Interaction):
     user_id = interaction.user.id
     if user_id in games:
-        await interaction.response.send_message("You already have a game running. Run the command `/stop` to stop.", ephemeral=True)
+        await interaction.response.send_message("❌ You already have a game running. Run the command `/stop` to stop. ❌", ephemeral=True)
         return
     
     games[user_id] = Generator(user_id)
-    await interaction.response.send_message("Loading cryptic crossword puzzle...", ephemeral=True)
+    await interaction.response.send_message("Loading cryptic crossword puzzle... 🖊️", ephemeral=True)
     embed,file = load_crossword(user_id=interaction.user.id)
     await interaction.followup.send(embed=embed, file=file)
 
@@ -52,7 +52,7 @@ async def start(interaction: discord.Interaction, clue_number: int, word: str, d
     
     user_id = interaction.user.id
     if user_id not in games:
-        await interaction.response.send_message("You do not have a game running. Run the command `/start` to start.", ephemeral=True)
+        await interaction.response.send_message("❌ You do not have a game running. Run the command `/start` to start. ❌", ephemeral=True)
         return
     
     clue_number = interaction.data.get('options', [{}])[0].get('value')
@@ -63,24 +63,24 @@ async def start(interaction: discord.Interaction, clue_number: int, word: str, d
     if result:
         await interaction.response.send_message(result, ephemeral=True)
     else:
-        await interaction.response.send_message(f"Successfully wrote '{word}' for clue number {clue_number}.", ephemeral=True)
+        await interaction.response.send_message(f"✔️ Successfully wrote '{word}' for clue number {clue_number}. ✔️", ephemeral=True)
         
         completion = games[user_id].check_complete()
         embed,file = load_crossword(user_id=interaction.user.id)
         if completion:
-            await interaction.followup.send(content=completion, file=file)
+            username = await bot.fetch_user(user_id)
+            text = f"‼️ Congratulations! {str(username)} has completed their crossword successfully! 🥳🎉"
+            await interaction.followup.send(content=text, file=file)
             del games[user_id]
         else:
             await interaction.followup.send(embed=embed, file=file)
-
-
 
 @app_commands.choices(direction=[Choice(name="ACROSS", value="across"), Choice(name="DOWN", value="down")])
 @bot.tree.command(name="verify", description="Checks if your solution is correct for a given clue number.")
 async def start(interaction: discord.Interaction, clue_number: int, direction: Choice[str]):
     user_id = interaction.user.id
     if user_id not in games:
-        await interaction.response.send_message("You do not have a game running. Run the command `/start` to start.", ephemeral=True)
+        await interaction.response.send_message("❌ You do not have a game running. Run the command `/start` to start. ❌", ephemeral=True)
         return
     
     clue_number = interaction.data.get('options', [{}])[0].get('value')
@@ -90,11 +90,11 @@ async def start(interaction: discord.Interaction, clue_number: int, direction: C
 async def start(interaction: discord.Interaction):
     user_id = interaction.user.id
     if user_id not in games:
-        await interaction.response.send_message("You do not have a game running. Run the command `/start` to start.", ephemeral=True)
+        await interaction.response.send_message("❌ You do not have a game running. Run the command `/start` to start. ❌", ephemeral=True)
         return
     
     del games[user_id]
-    await interaction.response.send_message("Your game has been stopped.", ephemeral=True)
+    await interaction.response.send_message("❌ Your game has been stopped. ❌", ephemeral=True)
 
 try:
     bot.run(C.TOKEN)
