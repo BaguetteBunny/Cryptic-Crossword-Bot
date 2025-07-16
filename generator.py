@@ -42,16 +42,18 @@ class Generator:
             direction = entry.get("direction")
             clue = entry.get("clue")
             number = entry.get("number")
+            solution = entry.get("solution")
+            position = entry.get("position")
 
             if direction == "across":
-                self.across_puzzle_lines[number] = {"clue": clue, "direction": "across", "solution": entry.get("solution"), "position": entry.get("position"), "my_solution": ""}
+                self.across_puzzle_lines[number] = {"clue": clue, "direction": direction, "solution": solution, "position": position, "my_solution": ""}
             elif direction == "down":
-                self.down_puzzle_lines[number] = {"clue": clue, "direction": "down", "solution": entry.get("solution"), "position": entry.get("position"), "my_solution": ""}
+                self.down_puzzle_lines[number] = {"clue": clue, "direction": direction, "solution": solution, "position": position, "my_solution": ""}
 
             symbol = "→" if direction == "across" else "↓"
             self.description += f"{number} {symbol} : {clue}\n"
 
-            print(entry.get("position"))
+            print(solution)
 
 
         # Load assets
@@ -62,6 +64,11 @@ class Generator:
         }
 
         self.create_crossword()
+
+        """
+        DEBUG HERE:
+        self.debug_check_completion // Fills grid except last one
+        """
 
     def crossword_exists(self, crid):
         req = requests.get(f"https://www.theguardian.com/crosswords/cryptic/{crid}.json")
@@ -113,7 +120,7 @@ class Generator:
                 )
                 drawn_labels.add((x, y))
     
-    def write(self, number, word, direction=None):
+    def write(self, number, word, direction):
         if direction == "across":
             puzzle_line = self.across_puzzle_lines
         elif direction == "down":
@@ -168,3 +175,25 @@ class Generator:
             return "Yes! That's the correct answer."
         else:
             return "No, that is incorrect. Try again!"
+        
+    def check_complete(self):
+        for number in self.across_puzzle_lines.keys():
+            if self.across_puzzle_lines[number]["my_solution"].upper() != self.across_puzzle_lines[number]["solution"].upper():
+                return
+            
+        for number in self.down_puzzle_lines.keys():
+            if self.down_puzzle_lines[number]["my_solution"].upper() != self.down_puzzle_lines[number]["solution"].upper():
+                return
+            
+        return "Congratulations! You've completed this crossword successfully!"
+    
+    def debug_check_completion(self):
+        for number in self.across_puzzle_lines.keys():
+            result = self.across_puzzle_lines[number]["solution"].upper()
+            self.across_puzzle_lines[number]["my_solution"] = result
+            self.write(number, result, direction="across")
+            
+        for number in list(self.down_puzzle_lines.keys())[:-1]:
+            result = self.down_puzzle_lines[number]["solution"].upper()
+            self.down_puzzle_lines[number]["my_solution"] = result
+            self.write(number, result, direction="down")

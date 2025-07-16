@@ -64,8 +64,16 @@ async def start(interaction: discord.Interaction, clue_number: int, word: str, d
         await interaction.response.send_message(result, ephemeral=True)
     else:
         await interaction.response.send_message(f"Successfully wrote '{word}' for clue number {clue_number}.", ephemeral=True)
+        
+        completion = games[user_id].check_complete()
         embed,file = load_crossword(user_id=interaction.user.id)
-        await interaction.followup.send(embed=embed, file=file)
+        if completion:
+            await interaction.followup.send(content=completion, file=file)
+            del games[user_id]
+        else:
+            await interaction.followup.send(embed=embed, file=file)
+
+
 
 @app_commands.choices(direction=[Choice(name="ACROSS", value="across"), Choice(name="DOWN", value="down")])
 @bot.tree.command(name="verify", description="Checks if your solution is correct for a given clue number.")
