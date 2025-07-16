@@ -29,7 +29,7 @@ class Generator:
 
         self.title = self.data["webTitle"].title()
         self.date = self.data["webPublicationDateDisplay"]
-        self.author = self.data["author"]["byline"].title()
+        self.author = str(self.data.get("author", {}).get("byline") or "Anonymous").title()
 
         self.across_puzzle_lines = {}
         self.down_puzzle_lines = {}
