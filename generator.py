@@ -148,5 +148,23 @@ class Generator:
                 self.canvas.paste(self.assets["empty"], (new_x, new_y))
             self.draw.text((new_x+20, new_y+10), char, fill="black", font=self.assets["letter_font"])
             self.haschar.append((new_x, new_y))
+
+    def verify(self, number, direction):
+        if direction == "across":
+            puzzle_line = self.across_puzzle_lines
+        elif direction == "down":
+            puzzle_line = self.down_puzzle_lines
+
+        if not 1 <= number <= max(max({int(k): v for k, v in self.across_puzzle_lines.items()}.keys()), max({int(k): v for k, v in self.down_puzzle_lines.items()}.keys())):
+            return f"Number {number} not found in crossword."
         
-        return None
+        if number not in puzzle_line.keys():
+            return f"Direction mismatch: Clue {number} cannot be completed {direction.lower()}."
+        
+        if puzzle_line[number]["my_solution"].upper() == "":
+            return "You have not provided a solution for this clue yet."
+        
+        if puzzle_line[number]["my_solution"].upper() == puzzle_line[number]["solution"].upper():
+            return "Yes! That's the correct answer."
+        else:
+            return "No, that is incorrect. Try again!"

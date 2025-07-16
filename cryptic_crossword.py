@@ -76,24 +76,7 @@ async def start(interaction: discord.Interaction, clue_number: int, direction: C
         return
     
     clue_number = interaction.data.get('options', [{}])[0].get('value')
-    puzzle_line = getattr(games[user_id], "across_puzzle_lines" if direction.value == "across" else "down_puzzle_lines")
-
-    if not 1 <= clue_number <= max(max({int(k): v for k, v in games[user_id].across_puzzle_lines.items()}.keys()), max({int(k): v for k, v in games[user_id].down_puzzle_lines.items()}.keys())):
-        await interaction.response.send_message("Invalid clue number. Please provide a valid number.", ephemeral=True)
-        return
-    
-    if clue_number not in puzzle_line.keys():
-        await interaction.response.send_message(f"Direction mismatch: Clue {clue_number} is not {direction.value}.", ephemeral=True)
-        return 
-    
-    if puzzle_line[clue_number]["my_solution"].upper() == "":
-        await interaction.response.send_message("You have not provided a solution for this clue yet.", ephemeral=True)
-        return
-    
-    if puzzle_line[clue_number]["my_solution"].upper() == puzzle_line[clue_number]["solution"].upper():
-        await interaction.response.send_message("Yes! That's the correct answer.", ephemeral=True)
-    else:
-        await interaction.response.send_message("No, that is not correct. Try again!", ephemeral=True)
+    await interaction.response.send_message(games[user_id].verify(clue_number, direction.value), ephemeral=True)
 
 @bot.tree.command(name="stop", description="Stop current cryptic crossword game.")
 async def start(interaction: discord.Interaction):
