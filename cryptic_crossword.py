@@ -7,7 +7,7 @@ from generator import Crossword, Puzzle
 from cachetools import TTLCache
 import requests
 
-def load_crossword(user_id):
+def load_crossword(user_id: int):
     # Buffer image generation
     buffer = io.BytesIO()
     crosswords[user_id].canvas.save(buffer, format="PNG")
@@ -20,7 +20,7 @@ def load_crossword(user_id):
     embed.set_footer(text=crosswords[user_id].date, icon_url="https://assets.guim.co.uk/static/frontend/icons/homescreen/apple-touch-icon-512.png")
     return embed, file
 
-def load_puzzle(user_id, completed: bool):
+def load_puzzle(user_id: int, completed: bool):
     # Generate puzzle_clue
     desc = puzzles[user_id].completed_description if completed else puzzles[user_id].description
     embed = discord.Embed(title=f"Made by {puzzles[user_id].author}", description=desc, colour=0x00b0f4, timestamp=datetime.datetime.now())
@@ -63,9 +63,6 @@ async def start(interaction: discord.Interaction, clue_number: int, word: str, d
     if user_id not in crosswords:
         await interaction.response.send_message("❌ You do not have a cryptic crossword running. Run the command `/start_crossword` to start. ❌", ephemeral=True)
         return
-    
-    clue_number = interaction.data.get('options', [{}])[0].get('value')
-    word = interaction.data.get('options', [{}])[1].get('value')
 
     result = crosswords[user_id].write(clue_number, word, direction.value)
     
@@ -92,7 +89,6 @@ async def start(interaction: discord.Interaction, clue_number: int, direction: C
         await interaction.response.send_message("❌ You do not have a cryptic crossword running. Run the command `/start_crossword` to start. ❌", ephemeral=True)
         return
     
-    clue_number = interaction.data.get('options', [{}])[0].get('value')
     await interaction.response.send_message(crosswords[user_id].verify(clue_number, direction.value, say_solution), ephemeral=True)
 
 @bot.tree.command(name="stop_crossword", description="Stop current cryptic crossword game.")
@@ -102,8 +98,8 @@ async def start(interaction: discord.Interaction):
         await interaction.response.send_message("❌ You do not have a cryptic crossword running. Run the command `/start_crossword` to start. ❌", ephemeral=True)
         return
     
-    del crosswords[user_id]
     await interaction.response.send_message("❌ Your cryptic crossword has been stopped. ❌", ephemeral=True)
+    del crosswords[user_id]
 
 @bot.tree.command(name="start_puzzle", description="Start a new cryptic puzzle.")
 async def start(interaction: discord.Interaction):
@@ -174,17 +170,8 @@ async def start(interaction: discord.Interaction, word: str):
             if i == 25:
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 await interaction.followup.send("❗ Too many definitions to load. ❗", ephemeral=True)
+                return
     await interaction.response.send_message(embed=embed, ephemeral=True)
-
-            
-    
-    
-
-
-
-    
-
-    
 
 try:
     bot.run(C.TOKEN)

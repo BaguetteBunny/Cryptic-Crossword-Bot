@@ -5,7 +5,7 @@ import constants as C
 from itertools import chain
 
 class Crossword:
-    def __init__(self, user_id, crossword_id=0):
+    def __init__(self, user_id: int, crossword_id: int = 0):
         self.user_id = user_id
 
         # Find valid crossword ID
@@ -67,7 +67,7 @@ class Crossword:
         self.debug_check_completion // Fills grid except last one
         """
 
-    def crossword_exists(self, crid):
+    def crossword_exists(self, crid: int):
         req = requests.get(f"https://www.theguardian.com/crosswords/cryptic/{crid}.json")
         return req if 200 == req.status_code else False
     
@@ -79,7 +79,7 @@ class Crossword:
         self.grid = [["!" for _ in range(C.COLS)] for _ in range(C.ROWS)]
 
         # Draw across puzzle lines
-        for _, value in self.across_puzzle_lines.items():
+        for value in self.across_puzzle_lines.values():
             position = value["position"]
             solution = value["solution"]
             x, y = position["x"], position["y"]
@@ -91,7 +91,7 @@ class Crossword:
                 self.grid[y][x + i] = "?"
 
         # Draw down puzzle lines
-        for _, value in self.down_puzzle_lines.items():
+        for value in self.down_puzzle_lines.values():
             position = value["position"]
             solution = value["solution"]
             x, y = position["x"], position["y"]
@@ -117,7 +117,7 @@ class Crossword:
                 )
                 drawn_labels.add((x, y))
     
-    def write(self, number, word, direction):
+    def write(self, number: int, word: str, direction: str):
         if direction == "across":
             puzzle_line = self.across_puzzle_lines
         elif direction == "down":
@@ -155,7 +155,7 @@ class Crossword:
             self.draw.text((new_x+20, new_y+10), char, fill="black", font=self.assets["letter_font"])
             self.haschar.append((new_x, new_y))
 
-    def verify(self, number, direction, showsolution):
+    def verify(self, number: int, direction: str, showsolution: bool):
         if direction == "across":
             puzzle_line = self.across_puzzle_lines
         elif direction == "down":
@@ -167,7 +167,7 @@ class Crossword:
         if number not in puzzle_line.keys():
             message = f"❌ Direction mismatch: Clue {number} cannot be completed {direction.lower()}. ❌"
         
-        if puzzle_line[number]["my_solution"].upper() == "":
+        if not puzzle_line[number]["my_solution"].upper():
             message = "❌ You have not provided a solution for this clue yet. ❌"
         
         if puzzle_line[number]["my_solution"].upper() == puzzle_line[number]["solution"].upper():
@@ -202,7 +202,7 @@ class Crossword:
             self.write(number, result, direction="down")
 
 class Puzzle:
-    def __init__(self, user_id, crossword_id=28668):
+    def __init__(self, user_id: int, crossword_id: int):
         self.user_id = user_id
 
         # Find valid crossword ID
@@ -237,7 +237,7 @@ class Puzzle:
         self.description = ("◻️ "*len(self.puzzle_line["solution"]) + "\n" + random_entry["clue"])
         self.completed_description = (f"**{self.puzzle_line['solution']}**" + "\n" + random_entry["clue"])
 
-    def write(self, word):
+    def write(self, word: str):
         # Length exact
         puzzle_length = len(self.puzzle_line["solution"])
         word_length = len(word)
@@ -246,10 +246,10 @@ class Puzzle:
         
         return self.check_solution(word)
 
-    def check_solution(self, word):
+    def check_solution(self, word: str):
         return self.puzzle_line["solution"].upper() == word.upper()
 
-    def crossword_exists(self, crid):
+    def crossword_exists(self, crid: int):
         req = requests.get(f"https://www.theguardian.com/crosswords/cryptic/{crid}.json")
         return req if 200 == req.status_code else False
     
