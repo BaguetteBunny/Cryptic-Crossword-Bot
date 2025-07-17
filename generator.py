@@ -202,7 +202,7 @@ class Crossword:
             self.write(number, result, direction="down")
 
 class Puzzle:
-    def __init__(self, user_id, crossword_id=0):
+    def __init__(self, user_id, crossword_id=28668):
         self.user_id = user_id
 
         # Find valid crossword ID
@@ -230,6 +230,8 @@ class Puzzle:
 
         entries = self.data["crossword"]["entries"]
         random_entry = random.choice(entries)
+        while random_entry["clue"].startswith("See ") or len(random_entry["humanNumber"])>2:
+            random_entry = random.choice(entries)
 
         self.puzzle_line = {"clue": random_entry["clue"], "solution": random_entry["solution"]}
         self.description = ("◻️ "*len(self.puzzle_line["solution"]) + "\n" + random_entry["clue"])
@@ -250,3 +252,4 @@ class Puzzle:
     def crossword_exists(self, crid):
         req = requests.get(f"https://www.theguardian.com/crosswords/cryptic/{crid}.json")
         return req if 200 == req.status_code else False
+    
