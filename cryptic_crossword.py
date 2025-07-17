@@ -5,6 +5,7 @@ from discord.app_commands import Choice
 import constants as C
 from generator import Crossword, Puzzle
 from cachetools import TTLCache
+import requests
 
 def load_crossword(user_id):
     # Buffer image generation
@@ -146,6 +147,44 @@ async def start(interaction: discord.Interaction):
     
     await interaction.response.send_message(f"❌ Your cryptic puzzle has been stopped.\nThe correct answer was: **{puzzles[user_id].puzzle_line['solution'].upper()}**❌", ephemeral=True)
     del puzzles[user_id]
+
+@bot.tree.command(name="def", description="Search a word in the dictionary.")
+async def start(interaction: discord.Interaction, word: str):
+    selected_word = word.lower()
+    selection = requests.get(f"https://api.dictionaryapi.dev/api/v2/entries/en/{selected_word}").json()
+
+    if selection == {"title":"No Definitions Found","message":"Sorry pal, we couldn't find definitions for the word you were looking for.","resolution":"You can try the search again at later time or head to the web instead."}:
+        await interaction.response.send_message("❌ This word does not exist in the dictionary. ❌", ephemeral=True)
+        return
+    
+    meanings = selection[0]['meanings']
+    source = selection[0]['sourceUrls'][0]
+
+    embed = discord.Embed(colour=0xf5009b, timestamp=datetime.datetime.now())
+    embed.set_author(name=f"Definition by dictionaryapi of:    {word.title()}")
+    embed.set_footer(text=f"Provided by {source}")
+
+    i = 1
+    for defs in meanings:
+        for single_def in defs["definitions"]:
+            field_value = f'    *Example: {single_def["example"]}*' if "example" in single_def else ""
+            embed.add_field(name=f'{i}. *({defs["partOfSpeech"]})*  {single_def["definition"]}', value=field_value, inline=False)
+            i+=1
+
+            if i == 25:
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                await interaction.followup.send("❗ Too many definitions to load. ❗", ephemeral=True)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+            
+    
+    
+
+
+
+    
+
+    
 
 try:
     bot.run(C.TOKEN)
