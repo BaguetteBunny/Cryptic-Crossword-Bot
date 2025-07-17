@@ -85,14 +85,14 @@ async def start(interaction: discord.Interaction, clue_number: int, word: str, d
 
 @app_commands.choices(direction=[Choice(name="ACROSS", value="across"), Choice(name="DOWN", value="down")])
 @bot.tree.command(name="verify_crossword", description="Checks if your cryptic crossword solution is correct for a given clue number.")
-async def start(interaction: discord.Interaction, clue_number: int, direction: Choice[str]):
+async def start(interaction: discord.Interaction, clue_number: int, direction: Choice[str], say_solution: bool):
     user_id = interaction.user.id
     if user_id not in crosswords:
         await interaction.response.send_message("❌ You do not have a cryptic crossword running. Run the command `/start_crossword` to start. ❌", ephemeral=True)
         return
     
     clue_number = interaction.data.get('options', [{}])[0].get('value')
-    await interaction.response.send_message(crosswords[user_id].verify(clue_number, direction.value), ephemeral=True)
+    await interaction.response.send_message(crosswords[user_id].verify(clue_number, direction.value, say_solution), ephemeral=True)
 
 @bot.tree.command(name="stop_crossword", description="Stop current cryptic crossword game.")
 async def start(interaction: discord.Interaction):
@@ -144,8 +144,8 @@ async def start(interaction: discord.Interaction):
         await interaction.response.send_message("❌ You do not have a cryptic puzzle running. Run the command `/start_puzzle` to start. ❌", ephemeral=True)
         return
     
+    await interaction.response.send_message(f"❌ Your cryptic puzzle has been stopped.\nThe correct answer was: **{puzzles[user_id].puzzle_line['solution'].upper()}**❌", ephemeral=True)
     del puzzles[user_id]
-    await interaction.response.send_message("❌ Your cryptic puzzle has been stopped. ❌", ephemeral=True)
 
 try:
     bot.run(C.TOKEN)
