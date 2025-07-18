@@ -119,8 +119,6 @@ async def start(interaction: discord.Interaction, word: str):
         await interaction.response.send_message("❌ You do not have a cryptic puzzle running. Run the command `/start_puzzle` to start. ❌", ephemeral=True)
         return
     
-    word = interaction.data.get('options', [{}])[0].get('value')
-
     result = puzzles[user_id].write(word)
 
     embed = load_puzzle(user_id=user_id, completed=False)
@@ -171,6 +169,23 @@ async def start(interaction: discord.Interaction, word: str):
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 await interaction.followup.send("❗ Too many definitions to load. ❗", ephemeral=True)
                 return
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@bot.tree.command(name="help", description="Shows a list of commands and their descriptions")
+async def start(interaction: discord.Interaction):
+    username = interaction.user.name
+    embed = discord.Embed(title=f"Requested by {username}", colour=0xf53d00, timestamp=datetime.datetime.now())
+    embed.set_author(name="List of Cryptonym's commands:", icon_url="https://i.pinimg.com/736x/63/79/d5/6379d5eecd5dbd3b4c2b425e802b537e.jpg")
+    embed.set_footer(text="For any enquires, DM: baguettebunny")
+    for cmd_name, info in C.COMMANDS_INFO.items():
+        description = info[0]
+        parameters = info[1]
+
+        true_command_name = f"/{cmd_name}"
+        for param in parameters:
+            true_command_name+=f" `{param}`"
+
+        embed.add_field(name=true_command_name, value=description)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 try:
