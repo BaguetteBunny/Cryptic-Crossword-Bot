@@ -202,7 +202,7 @@ class Crossword:
             self.write(number, result, direction="down")
 
 class Puzzle:
-    def __init__(self, user_id: int, crossword_id: int):
+    def __init__(self, user_id: int, crossword_id: int = -1):
         self.user_id = user_id
 
         # Find valid crossword ID
